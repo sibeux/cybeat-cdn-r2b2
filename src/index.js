@@ -4,29 +4,37 @@ export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
 
-		// 1. Tentukan Cache Key (Gunakan URL asli user sebagai kunci)
-		// Kita gunakan cache standard Cloudflare
-		const cache = caches.default;
-		const cacheKey = new Request(url.toString(), request);
+		// 1. TENTUKAN CACHE KEY (Force GET)
+		// Trik: Kita paksa kuncinya selalu dianggap GET.
+		// Jadi mau user curl -I (HEAD) atau download (GET), lacinya SAMA.
+		const cacheKey = new Request(url.toString(), {
+			method: 'GET',
+			headers: request.headers,
+		});
 
-		// 2. CEK CACHE DULU (Manual Check)
-		// Sebelum capek-capek minta ke Backblaze, cek apakah kita sudah punya filenya?
+		const cache = caches.default;
 		let response = await cache.match(cacheKey);
 
 		if (response) {
-			// --- JIKA HIT (Ada di Cache) ---
-			// Kita return langsung. Gak perlu jalanin logic B2 sama sekali.
-			// Hemat biaya request B2 & Super Cepat.
+			// --- JIKA HIT ---
 			const newHeaders = new Headers(response.headers);
-			newHeaders.set('CF-Cache-Status', 'HIT-MANUAL'); // Penanda kalau ini dari script kita
+			newHeaders.set('CF-Cache-Status', 'HIT-MANUAL');
+
+			// Jika user aslinya minta HEAD, kita buang body-nya biar irit bandwidth user
+			if (request.method === 'HEAD') {
+				return new Response(null, {
+					status: response.status,
+					headers: newHeaders,
+				});
+			}
+
 			return new Response(response.body, {
 				status: response.status,
 				headers: newHeaders,
 			});
 		}
 
-		// --- JIKA MISS (Gak ada di Cache) ---
-		// Lanjut ke proses normal ambil dari Backblaze
+		// --- JIKA MISS (Ambil ke Backblaze) ---
 
 		if (url.pathname === '/' || url.pathname.endsWith('/')) {
 			return new Response('Access Denied', { status: 403 });
@@ -45,40 +53,47 @@ export default {
 		const b2Path = pathSegments.join('/');
 		const b2Url = new URL(`https://${env.B2_ENDPOINT}/${env.B2_BUCKET_NAME}${b2Path}`);
 
+		// 2. REKAYASA REQUEST KE B2 (Force GET)
+		// Kita selalu minta file UTUH (GET) ke Backblaze supaya bisa disimpan di cache.
+		// Jangan pakai request.method (karena kalau HEAD, nanti gak ada isinya buat dicache)
 		const signedRequest = await client.sign(b2Url.toString(), {
-			method: request.method,
+			method: 'GET',
 			headers: {
 				Range: request.headers.get('Range'),
 			},
 		});
 
-		// Fetch ke Backblaze
 		const b2Response = await fetch(signedRequest);
 
 		if (b2Response.status === 404) {
 			return new Response('File not found', { status: 404 });
 		}
 
-		// Siapkan Response untuk disimpan
 		const newHeaders = new Headers(b2Response.headers);
 		newHeaders.delete('x-amz-request-id');
 		newHeaders.delete('x-amz-id-2');
-
-		// SETTING CACHE SUPER KUAT
-		// Browser simpan 1 hari, Cloudflare simpan 1 tahun (biar awet)
 		newHeaders.set('Cache-Control', 'public, max-age=86400, s-maxage=31536000');
 		newHeaders.set('CF-Cache-Status', 'MISS-FETCHED');
 
+		// Buat response object yang siap disimpan (harus ada body-nya)
 		const finalResponse = new Response(b2Response.body, {
 			status: b2Response.status,
 			headers: newHeaders,
 		});
 
-		// 3. SIMPAN KE CACHE (Manual Put)
-		// Kita simpan clone-nya agar request berikutnya langsung dapet HIT
-		// Syarat: Hanya simpan jika sukses (200) dan bukan partial content (206) biar aman
+		// 3. SIMPAN KE CACHE
+		// Kita simpan clone-nya. Karena ini GET, body-nya lengkap. Cache pasti senang.
 		if (b2Response.status === 200) {
 			ctx.waitUntil(cache.put(cacheKey, finalResponse.clone()));
+		}
+
+		// 4. KEMBALIKAN KE USER
+		// Jika user tadi minta HEAD, kita potong body-nya sekarang
+		if (request.method === 'HEAD') {
+			return new Response(null, {
+				status: finalResponse.status,
+				headers: finalResponse.headers,
+			});
 		}
 
 		return finalResponse;
