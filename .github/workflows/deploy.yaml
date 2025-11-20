@@ -27,9 +27,9 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           # accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} # Hapus pagar jika kamu simpan Account ID di Secrets juga
-          secrets: |
-              B2_KEY_ID
-              B2_APP_KEY
-        env:
-          B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
-          B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
+        #   secrets: |
+        #       B2_KEY_ID
+        #       B2_APP_KEY
+        # env:
+        #   B2_KEY_ID: ${{ secrets.B2_KEY_ID }}
+        #   B2_APP_KEY: ${{ secrets.B2_APP_KEY }}
