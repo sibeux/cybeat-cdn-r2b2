@@ -3,7 +3,7 @@ name: Deploy to Cloudflare Workers
 on:
   push:
     branches:
-      - main # Atau 'master', sesuaikan dengan branch utamamu
+      - master # Atau 'master', sesuaikan dengan branch utamamu
 
 jobs:
   deploy:
