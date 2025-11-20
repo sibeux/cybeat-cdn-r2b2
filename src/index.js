@@ -36,8 +36,16 @@ export default {
 			},
 		});
 
-		// 6. Fetch ke Backblaze
-		const response = await fetch(signedRequest);
+		// 6. Fetch ke Backblaze dengan instruksi "Paksa Cache"
+		// Kita copy request yang sudah ditandatangani, tapi tambahkan opsi caching Cloudflare
+		const response = await fetch(signedRequest, {
+			cf: {
+				// PENTING: Memaksa CF caching meskipun ada header Authorization
+				cacheEverything: true,
+				// Cache di server Cloudflare (Edge) selama 1 hari (86400 detik)
+				cacheTtl: 86400,
+			},
+		});
 
 		// 7. Handle Error (404)
 		if (response.status === 404) {
