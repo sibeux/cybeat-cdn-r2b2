@@ -7,9 +7,16 @@
 	"name": "cybeat-cdn-r2b2",
 	"main": "src/index.js",
 	"compatibility_date": "2025-11-20",
+	// --- WAJIB DIISI (Ambil dari URL Dashboard) ---
+	"account_id": "80822ecfb708a4ea177c6e2dec09b820",
 	"observability": {
 		"enabled": true
-	}
+	},
+	// --- Setting Environment Variables ---
+	"vars": {
+		"B2_ENDPOINT": "s3.us-west-004.backblazeb2.com",
+		"B2_BUCKET_NAME": "cybeat-sibeux"
+	},
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
