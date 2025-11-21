@@ -1,6 +1,7 @@
 # Documentation
 
 ORIGINAL SOURCE DOCS BY GEMINI: <https://gemini.google.com/share/8b506a75f4ec>
+HOW TO UPLOAD TO BACKBLAZE: <https://chatgpt.com/c/691f0412-6184-8323-ac55-05db2aacd913>
 
 ## SET UP BACKBLAZE B2
 
@@ -13,6 +14,10 @@ keyID: 0044bb329480c123jda20000000003
 keyName: r2-cybeat-key
 applicationKey: K0040asf8234RoBYE5Lv7M3535r2qPm1k867SDIknH4
 ```
+
+## CREATE BACKBLAZE REMOTE DI RCLONE
+
+Lihat dokumentasi lengkap cara membuat remote B2 di chatgpt di atas.
 
 ## UPLOAD FILE DARI WINDOWS KE BACKBLAZE B2 BY CLI
 
